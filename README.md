@@ -1,1 +1,1 @@
-### JPS (Jelastic Package Collection)
+### JPS (Jelastic Packaging Standard)
