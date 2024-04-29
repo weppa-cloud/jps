@@ -1,0 +1,37 @@
+type: install
+name: Mautic JPS
+version: 1.0
+categories: [“apps/support”, “apps/popular”]
+displayName: Mautic
+ssl: true
+
+nodes:
+  - image: mariadb:latest
+    name: database
+    cloudlets: 16
+    nodeGroup: cp
+    diskLimit: 50G
+    volumes:
+      - ./db_data:/var/lib/mysql
+    env:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=mautic
+      - MYSQL_USER=mautic
+      - MYSQL_PASSWORD=secret
+
+
+  - image: mautic/mautic:v3
+    name: mautic
+    dependsOn:
+      - database
+    ports:
+      - 8200:80
+    volumes:
+      - ./mautic_data:/var/www/html
+    env:
+      - MAUTIC_DB_HOST=database:3306
+      - MYSQL_PORT_3306_TCP=3306
+      - MAUTIC_DB_USER=mautic
+      - MAUTIC_DB_PASSWORD=secret
+      - MAUTIC_DB_NAME=mautic
+      - MAUTIC_RUN_CRON_JOBS=true
