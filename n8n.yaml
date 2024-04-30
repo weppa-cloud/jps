@@ -2,13 +2,14 @@ type: install
 id: n8n-workflow
 version: 1.0
 name: n8n Workflow Automation
-homepage: http://n8n.io/
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/n8n/master
-logo: /images/n8n-logo.png
+homepage: https://n8n.io/
+# baseUrl: https://raw.githubusercontent.com/jelastic-jps/n8n/master
+logo: https://asset.brandfetch.io/idO6_6uqJ9/id-H5HD3pX.png?updated=1655217178680
 globals:
   db_user: n8n-${fn.random(1000)}
   db_pswd: ${fn.password}
-  n8n_config: /home/n8n/.n8n/config
+  # n8n_config: /home/n8n/.n8n/config
+  encryption_key: n8n-${fn.random(1000)}-${fn.random(1000)}
 targetRegions:
   type: [ vz.*, pcs.* ]
 categories:
@@ -58,13 +59,15 @@ onBeforeInit: |
       }
   };
 
+ssl: true
+
 nodes:
 - nodeType: nginx
   displayName: Load Balancer
   cloudlets: 16
   nodeGroup: bl
 - image: n8nio/n8n:${settings.version}
-  displayName: n8n Node
+  displayName: n8n
   cloudlets: 16
   nodeGroup: cp
   links: sqldb:db
@@ -73,8 +76,8 @@ nodes:
     N8N_BASIC_AUTH_ACTIVE: true
     N8N_BASIC_AUTH_USER: ${globals.db_user}
     N8N_BASIC_AUTH_PASSWORD: ${globals.db_pswd}
-    WEBHOOK_TUNNEL_URL: https://${env.domain}/
-- image: postgres:13.5
+    WEBHOOK_TUNNEL_URL: http://${env.domain}/
+- image: postgres:16.2
   cloudlets: 16
   nodeGroup: sqldb
   displayName: PostgreSQL DB
@@ -87,20 +90,34 @@ onInstall:
   - if ('${env.protocol}' == 'https'):
       cmd[bl]: |-
         CONF_FILE="/etc/nginx/nginx-jelastic.conf"
-        sed -i ':a;$!{N;ba};s/\\(location \\/ {\\)/\\1\\n\\n\\t\\t\\t\\t\\t\\tif ($http_x_forwarded_proto = http) {\\n\\t\\t\\t\\t\\t\\t\\t\\treturn 302 https:\\/\\/$host$request_uri;\\n\\t\\t\\t\\t\\t\\t\\t\\terror_page  500 502 503 504 = @rescue;\\n\\t\\t\\t\\t\\t\\t}\\n/1' $CONF_FILE
+        sed -i ':a;$!{N;ba};s/\\(location \\/ {\\)/\\1\\n\\n\\t\\t\\t\\t\\t\\tif ($http_x_forwarded_proto = http) {\\n\\t\\t\\t\\t\\t\\t\\t\\treturn 302 https:\\/\\/$host$request_uri;\\n\\t\\t\\t\\t\\t\\t\\t\\terror_page  500 502 503 504 = @rescue;\\n\\t\\t\\t\\t\\t\\t}\\n/1' "$CONF_FILE"
+        sed -i -r 's/(:80)\$ common;/:5678\$ common;/' "$CONF_FILE"
+        sed -i -r 's/(server[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)(;)/\1:5678\2/g' "$CONF_FILE"
+        sed -i -r 's/(server[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+))[[:space:]]*;/\1:5678;/' "$CONF_FILE"
         service nginx restart
       user: root
-  - cmd[cp]: |-
-      mkdir -p /home/node/.n8n
-      echo "DB_TYPE=postgresdb" | tee -a /home/node/.n8n/config
-      echo "DB_POSTGRESDB_DATABASE=${globals.db_user}" | tee -a /home/node/.n8n/config
-      echo "DB_POSTGRESDB_HOST=${nodes.sqldb[0].address}" | tee -a /home/node/.n8n/config
-      echo "DB_POSTGRESDB_PORT=5432" | tee -a /home/node/.n8n/config
-      echo "DB_POSTGRESDB_USER=${globals.db_user}" | tee -a /home/node/.n8n/config
-      echo "DB_POSTGRESDB_PASSWORD=${globals.db_pswd}" | tee -a /home/node/.n8n/config
-      # No es necesario un comando de reinicio específico ya que el contenedor maneja esto con 'tini'
-      echo "Configuration updated. Restart the container if necessary."
 
+  - cmd[cp]: |-
+      mkdir -p /home/n8n/.n8n
+      echo "DB_TYPE=postgresdb" | tee -a /home/n8n/.n8n/config
+      echo "DB_POSTGRESDB_DATABASE=${globals.db_user}" | tee -a /home/n8n/.n8n/config
+      echo "DB_POSTGRESDB_HOST=${nodes.sqldb[0].address}" | tee -a /home/n8n/.n8n/config
+      echo "DB_POSTGRESDB_PORT=5432" | tee -a /home/n8n/.n8n/config
+      echo "DB_POSTGRESDB_USER=${globals.db_user}" | tee -a /home/n8n/.n8n/config
+      echo "DB_POSTGRESDB_PASSWORD=${globals.db_pswd}" | tee -a /home/n8n/.n8n/config
+      echo "N8N_ENCRYPTION_KEY=${globals.encryption_key}" | tee -a /home/n8n/.n8n/config
+      echo "Configuration updated. Restart the container if necessary."
+      
+
+onAfterInstall:
+  - cmd[cp]: |-
+      echo "Starting n8n... Mauriciooooooo"
+      n8n start
+    user: root
+  - cmd[cp]: |-
+      mkdir -p /home/test
+    user: root
+      
 
 success: |-
   n8n Workflow Automation is ready to use. Please open [${env.url}](${env.url}) to configure your workflows.
