@@ -1,0 +1,58 @@
+type: install
+id: chatwoot-docker-engine
+version: 1.0
+name: chatwoot
+homepage: https://www.chatwoot.com/
+logo: https://bookface-images.s3.amazonaws.com/small_logos/0af43b9e898cb4ccdf73f216e7d4ade296ca114e.png
+categories:
+  - apps/automation
+  - apps/popular
+  
+ssl: true
+
+nodes:
+- nodeType: nginx
+  displayName: Load Balancer
+  cloudlets: 16
+  nodeGroup: bl
+
+- nodeType: dockerengine
+  displayName: Chatwoot
+  cloudlets: 16
+  nodeGroup: cp
+  startServiceOnCreation: true
+  
+onInstall:
+
+  - cmd[bl]: |-
+      CONF_FILE="/etc/nginx/nginx-jelastic.conf"
+      sed -i 's/proxy_read_timeout 300s;/proxy_read_timeout 36000s;/' "$CONF_FILE"
+      sed -i 's/large_client_header_buffers 4 2k;/large_client_header_buffers 4 16k;/' "$CONF_FILE"
+      service nginx restart
+    user: root
+  - cmd[cp]: |-
+      mkdir /home/chatwoot
+      cd /home/chatwoot
+      wget -O docker-compose.yaml https://raw.githubusercontent.com/chatwoot/chatwoot/develop/docker-compose.production.yaml
+      
+      UNIVERSAL_PASSWORD=$(openssl rand -base64 32 | tr -d /=+ | cut -c1-16)
+      
+      sed -i "s/POSTGRES_PASSWORD=.*$/POSTGRES_PASSWORD=$UNIVERSAL_PASSWORD/g" docker-compose.yaml
+      
+      sed -i "s/127.0.0.1:3000:3000/80:3000/" docker-compose.yaml
+      
+      
+      wget -O .env https://raw.githubusercontent.com/chatwoot/chatwoot/develop/.env.example
+      
+      sed -i "s/^POSTGRES_PASSWORD=.*$/POSTGRES_PASSWORD=$UNIVERSAL_PASSWORD/" .env
+      sed -i "s/^SECRET_KEY_BASE=.*$/SECRET_KEY_BASE=$UNIVERSAL_PASSWORD/" .env
+      sed -i "s/^REDIS_PASSWORD=.*$/REDIS_PASSWORD=$UNIVERSAL_PASSWORD/" .env
+      
+      sed -i 's|^FRONTEND_URL=http://0.0.0.0:3000.*|FRONTEND_URL='"${env.url}"'|' .env
+      
+      docker compose run --rm rails bundle exec rails db:chatwoot_prepare
+      
+      docker compose up -d
+      
+success: |-
+  Instalación Éxitosa [${env.url}](${env.url})
