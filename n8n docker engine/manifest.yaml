@@ -1,0 +1,42 @@
+type: install
+id: n8n-docker-engine
+version: 1.0
+name: n8n
+homepage: https://n8n.io/
+logo: https://asset.brandfetch.io/idO6_6uqJ9/id-H5HD3pX.png?updated=1655217178680
+categories:
+  - apps/automation
+  - apps/popular
+
+globals:
+  db_postgres_password: ${fn.password}
+  encryption_key: n8n${fn.password}
+
+ssl: true
+
+nodes:
+- nodeType: nginx
+  displayName: Load Balancer
+  cloudlets: 16
+  nodeGroup: bl
+
+- nodeType: dockerengine
+  displayName: N8n
+  cloudlets: 16
+  nodeGroup: cp
+  startServiceOnCreation: true
+
+onInstall:
+  - cmd[cp]: |-
+      mkdir /home/n8n
+      cd /home/n8n
+      curl -L -o docker-compose.yaml https://raw.githubusercontent.com/weppa-cloud/jps/n8n/docker-compose.yaml
+      CONF_FILE="/home/n8n/docker-compose.yaml"
+      sed -i -r "s/([[:space:]]*- DB_POSTGRESDB_PASSWORD=).*/\1${globals.db_postgres_password}/g" "$CONF_FILE"
+      sed -i -r "s/([[:space:]]*- N8N_ENCRYPTION_KEY=).*/\1${globals.encryption_key}/g" "$CONF_FILE"
+      sed -i -r "s/([[:space:]]*- POSTGRES_PASSWORD=).*/\1${globals.db_postgres_password}/g" "$CONF_FILE"
+      docker compose up -d
+    user: root
+
+success: |-
+  Instalación Éxitosa

@@ -1,9 +1,7 @@
 ### JPS (Jelastic Packaging Standard)
 
-Después de importar el JPS 
+#### n8n nodes
+JPS de n8n con 3 nodos (nginx, n8n, postgres)
 
-* Agregar la variable de entorno al nodo n8n 
-    `DB_POSTGRESDB_HOST=ip-de-nodo-postgres`
-
-* Reiniciar nodo de n8n
-* Esperar a que el servicio de n8n inicie
+#### n8n docker engine
+JPS de n8n con 2 nodos (nginx y Docker engine)

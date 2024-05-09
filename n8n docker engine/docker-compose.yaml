@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n
+    image: n8nio/n8n:latest
     ports:
       - "80:5678"
     environment:
@@ -12,8 +12,8 @@ services:
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=n8n_user
       - DB_POSTGRESDB_SCHEMA=public
-      - DB_POSTGRESDB_PASSWORD=consultoria
-      - N8N_ENCRYPTION_KEY=Sunset123!Sunset123!
+      - DB_POSTGRESDB_PASSWORD=
+      - N8N_ENCRYPTION_KEY=
       - N8N_SECURE_COOKIE=false
     volumes:
       - n8n_data:/home/node/.n8n
@@ -25,7 +25,7 @@ services:
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_USER=n8n_user
-      - POSTGRES_PASSWORD=consultoria
+      - POSTGRES_PASSWORD=
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
