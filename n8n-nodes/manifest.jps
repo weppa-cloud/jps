@@ -3,7 +3,7 @@ id: n8n
 version: 1.0
 name: n8n Workflow Automation
 homepage: https://n8n.io/
-logo: https://github.com/weppa-cloud/jps/blob/n8n/assets/logo-n8n.png
+logo: https://weppa.cloud/wp-content/uploads/2024/05/logo-n8n.png
 globals:
   db_user: n8n-${fn.random(1000)}
   db_pswd: ${fn.password}

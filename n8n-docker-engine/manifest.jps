@@ -3,7 +3,7 @@ id: n8n-docker-engine
 version: 1.0
 name: n8n
 homepage: https://n8n.io/
-logo: https://github.com/weppa-cloud/jps/blob/n8n/assets/logo-n8n.png
+logo: https://weppa.cloud/wp-content/uploads/2024/05/logo-n8n.png
 categories:
   - apps/automation
   - apps/popular
@@ -30,7 +30,7 @@ onInstall:
   - cmd[cp]: |-
       mkdir /home/n8n
       cd /home/n8n
-      curl -L -o docker-compose.yaml https://github.com/weppa-cloud/jps/blob/n8n/n8n%20docker%20engine/docker-compose.yaml
+      curl -L -o docker-compose.yaml https://raw.githubusercontent.com/weppa-cloud/jps/n8n/n8n-docker-engine/docker-compose.yaml
       CONF_FILE="/home/n8n/docker-compose.yaml"
       sed -i -r "s/([[:space:]]*- DB_POSTGRESDB_PASSWORD=).*/\1${globals.db_postgres_password}/g" "$CONF_FILE"
       sed -i -r "s/([[:space:]]*- N8N_ENCRYPTION_KEY=).*/\1${globals.encryption_key}/g" "$CONF_FILE"
