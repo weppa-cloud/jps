@@ -35,7 +35,7 @@ onInstall:
       sed -i -r "s/([[:space:]]*- DB_POSTGRESDB_PASSWORD=).*/\1${globals.db_postgres_password}/g" "$CONF_FILE"
       sed -i -r "s/([[:space:]]*- N8N_ENCRYPTION_KEY=).*/\1${globals.encryption_key}/g" "$CONF_FILE"
       sed -i -r "s/([[:space:]]*- POSTGRES_PASSWORD=).*/\1${globals.db_postgres_password}/g" "$CONF_FILE"
-      sed -i -r "s/([[:space:]]*- WEBHOOK_URL=).*/\1${env.url}/g" "$CONF_FILE"
+      sed -i -r "s/([[:space:]]*- WEBHOOK_URL=).*/\1midominio/g" "$CONF_FILE"
       docker compose up -d
     user: root
 
