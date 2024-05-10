@@ -11,6 +11,8 @@ categories:
 globals:
   db_postgres_password: ${fn.password}
   encryption_key: n8n${fn.password}
+  n8n_user: ${fn.password(3)}
+  n8n_password: ${fn.password(10)}
 
 ssl: true
 
@@ -32,10 +34,12 @@ onInstall:
       cd /home/n8n
       curl -L -o docker-compose.yaml https://raw.githubusercontent.com/weppa-cloud/jps/n8n/n8n-docker-engine/docker-compose.yaml
       CONF_FILE="/home/n8n/docker-compose.yaml"
+      sed -i -r "s|([[:space:]]*- WEBHOOK_URL=).*|\1${env.url}|" "$CONF_FILE"
       sed -i -r "s/([[:space:]]*- DB_POSTGRESDB_PASSWORD=).*/\1${globals.db_postgres_password}/g" "$CONF_FILE"
       sed -i -r "s/([[:space:]]*- N8N_ENCRYPTION_KEY=).*/\1${globals.encryption_key}/g" "$CONF_FILE"
       sed -i -r "s/([[:space:]]*- POSTGRES_PASSWORD=).*/\1${globals.db_postgres_password}/g" "$CONF_FILE"
-      sed -i -r "s/([[:space:]]*- WEBHOOK_URL=).*/\1midominio/g" "$CONF_FILE"
+      sed -i -r "s/([[:space:]]*- N8N_BASIC_AUTH_USER=).*/\1${globals.n8n_user}/g" "$CONF_FILE"
+      sed -i -r "s/([[:space:]]*- N8N_BASIC_AUTH_PASSWORD=).*/\1${globals.n8n_password}/g" "$CONF_FILE"
       docker compose up -d
     user: root
 
