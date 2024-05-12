@@ -18,7 +18,7 @@ nodes:
 
 - nodeType: dockerengine
   displayName: Chatwoot
-  cloudlets: 16
+  cloudlets: 32
   nodeGroup: cp
   startServiceOnCreation: true
   
