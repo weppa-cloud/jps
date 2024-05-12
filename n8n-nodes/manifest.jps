@@ -1,0 +1,105 @@
+type: install
+id: n8n
+version: 1.0
+name: n8n Workflow Automation
+homepage: https://n8n.io/
+logo: https://weppa.cloud/wp-content/uploads/2024/05/logo-n8n.png
+globals:
+  db_user: n8n-${fn.random(1000)}
+  db_pswd: ${fn.password}
+  encryption_key: n8n${fn.password}
+targetRegions:
+  type: [ vz.*, pcs.* ]
+categories:
+  - apps/automation
+  - apps/popular
+
+onBeforeInit: |
+  import org.apache.commons.httpclient.HttpClient;
+  import org.apache.commons.httpclient.methods.GetMethod;
+
+  var client = new HttpClient(),
+      getMethod,
+      response,
+      status,
+      resp,
+      url;
+  
+  url = "https://registry.hub.docker.com/v2/repositories/n8nio/n8n/tags";
+  getMethod = new GetMethod(url);
+  status = client.executeMethod(getMethod);
+  resp = getMethod.getResponseBodyAsString();
+  resp = JSON.parse(resp);
+  tags = resp.results;
+
+  var ver = {};
+  var def = "latest";
+  var tag;
+
+  for (var i = 0, n = tags.length; i < n; i++) {
+      tag = tags[i].name;
+      if (tag) {
+          ver[tag] = tag;
+          def = tag;
+      }
+  }
+
+  return {
+      result: 0,
+      settings: {
+          fields: [{
+              name: "version",
+              caption: "n8n Version",
+              type: "list",
+              values: ver,
+              "default": def
+          }]
+      }
+  };
+
+ssl: true
+
+nodes:
+- nodeType: nginx
+  displayName: Load Balancer
+  cloudlets: 16
+  nodeGroup: bl
+- image: n8nio/n8n:${settings.version}
+  displayName: n8n
+  cloudlets: 16
+  nodeGroup: cp
+  links: sqldb:db
+  startServiceOnCreation: true
+  env:
+    N8N_BASIC_AUTH_ACTIVE: true
+    N8N_BASIC_AUTH_USER: ${globals.db_user}
+    N8N_BASIC_AUTH_PASSWORD: ${globals.db_pswd}
+    WEBHOOK_TUNNEL_URL: ${env.url}
+    N8N_ENCRYPTION_KEY: ${globals.encryption_key}
+    DB_TYPE: postgresdb
+    DB_POSTGRESDB_DATABASE: n8n
+    DB_POSTGRESDB_PORT: 5432
+    DB_POSTGRESDB_USER: ${globals.db_user}
+    DB_POSTGRESDB_PASSWORD: ${globals.db_pswd}
+- image: postgres:16.2
+  cloudlets: 16
+  nodeGroup: sqldb
+  displayName: PostgreSQL DB
+  env:
+    POSTGRES_USER: ${globals.db_user}
+    POSTGRES_PASSWORD: ${globals.db_pswd}
+    POSTGRES_DB: n8n
+
+onInstall:
+  - if ('${env.protocol}' == 'https'):
+      cmd[bl]: |-
+        CONF_FILE="/etc/nginx/nginx-jelastic.conf"
+        sed -i ':a;$!{N;ba};s/\\(location \\/ {\\)/\\1\\n\\n\\t\\t\\t\\t\\t\\tif ($http_x_forwarded_proto = http) {\\n\\t\\t\\t\\t\\t\\t\\t\\treturn 302 https:\\/\\/$host$request_uri;\\n\\t\\t\\t\\t\\t\\t\\t\\terror_page  500 502 503 504 = @rescue;\\n\\t\\t\\t\\t\\t\\t}\\n/1' "$CONF_FILE"
+        sed -i -r 's/(:80)\$ common;/:5678\$ common;/' "$CONF_FILE"
+        sed -i -r 's/(server[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)(;)/\1:5678\2/g' "$CONF_FILE"
+        sed -i -r 's/(server[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+))[[:space:]]*;/\1:5678;/' "$CONF_FILE"
+        service nginx restart
+      user: root
+
+success: |-
+  N8n Workflow Automation está listo para usar. Por favor abra el siguiente link [${env.url}](${env.url}) para configurar tus workflows.
